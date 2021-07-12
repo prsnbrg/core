@@ -1174,6 +1174,7 @@ default:
       contexts:
         - FeatureContext: *common_feature_context_params
         - WebDavLockingContext:
+        - WebUIAdminGeneralSettingsContext:
         - WebUIFilesContext:
         - WebUIGeneralContext:
         - WebUILoginContext:
