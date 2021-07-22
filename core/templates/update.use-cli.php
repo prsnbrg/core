@@ -3,7 +3,7 @@
 		<h2 class="title"><?php p($l->t('Upgrade needed')) ?></h2>
 		<div class="infogroup">
 			<?php if ($_['tooBig']) {
-	p($l->t('It looks like your instance may host many files and/or users. To ensure a smooth upgrade process, please use the command line updater (occ upgrade).'));
+	p($l->t('It looks like your instance may host many files and/or users. To ensure a smooth upgrade process, please use the command line upgrade command (occ upgrade).'));
 } else {
 	p($l->t('Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade).'));
 } ?><br><br>
