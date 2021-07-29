@@ -352,7 +352,7 @@ def initialPipelines(ctx):
     return dependencies(ctx) + checkStarlark()
 
 def beforePipelines(ctx):
-    return codestyle() + changelog(ctx) + phpstan() + phan()
+    return codestyle() + changelog(ctx) + listBuilds() + phpstan() + phan()
 
 def coveragePipelines(ctx):
     # All unit test pipelines that have coverage or other test analysis reported
@@ -639,6 +639,55 @@ def changelog(ctx):
     pipelines.append(result)
 
     return pipelines
+
+def listBuilds():
+    pipelines = []
+
+    result = {
+        "kind": "pipeline",
+        "type": "docker",
+        "name": "list-builds",
+        "workspace": {
+            "base": dir["base"],
+            "path": "src",
+        },
+        "steps": getRecentBuilds(),
+        "depends_on": [],
+        "trigger": {
+            "ref": [
+                "refs/heads/master",
+                "refs/tags/**",
+                "refs/pull/**",
+            ],
+        },
+    }
+
+    pipelines.append(result)
+
+    return pipelines
+
+def getRecentBuilds():
+    return [{
+        "name": "get-recent-builds",
+        "image": "drone/cli:alpine",
+        "pull": "always",
+        "environment": {
+            "DRONE_SERVER": "https://drone.owncloud.com",
+            "DRONE_TOKEN": {
+                "from_secret": "drone_token",
+            },
+        },
+        "commands": [
+            "drone build ls owncloud/core --status running > %s/recentBuilds.txt" % dir["server"],
+            "drone build info owncloud/core ${DRONE_BUILD_NUMBER} > %s/thisBuildInfo.txt" % dir["server"],
+            "cd %s && ./tests/acceptance/cancelBuilds.sh" % dir["server"],
+        ],
+        "when": {
+            "event": [
+                "pull_request",
+            ],
+        },
+    }]
 
 def phpstan():
     pipelines = []
