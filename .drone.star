@@ -352,7 +352,7 @@ def initialPipelines(ctx):
     return dependencies(ctx) + checkStarlark()
 
 def beforePipelines(ctx):
-    return codestyle() + changelog(ctx) + listBuilds() + phpstan() + phan()
+    return codestyle() + changelog(ctx) + checkForRecentBuilds(ctx) + phpstan() + phan()
 
 def coveragePipelines(ctx):
     # All unit test pipelines that have coverage or other test analysis reported
@@ -640,18 +640,18 @@ def changelog(ctx):
 
     return pipelines
 
-def listBuilds():
+def checkForRecentBuilds(ctx):
     pipelines = []
 
     result = {
         "kind": "pipeline",
         "type": "docker",
-        "name": "list-builds",
+        "name": "stop-recent-builds",
         "workspace": {
             "base": dir["base"],
             "path": "src",
         },
-        "steps": getRecentBuilds(),
+        "steps": stopRecentBuilds(ctx),
         "depends_on": [],
         "trigger": {
             "ref": [
@@ -666,9 +666,11 @@ def listBuilds():
 
     return pipelines
 
-def getRecentBuilds():
+def stopRecentBuilds(ctx):
+    repo_slug = ctx.build.source_repo if ctx.build.source_repo else ctx.repo.slug
+
     return [{
-        "name": "get-recent-builds",
+        "name": "stop-recent-builds",
         "image": "drone/cli:alpine",
         "pull": "always",
         "environment": {
@@ -678,8 +680,8 @@ def getRecentBuilds():
             },
         },
         "commands": [
-            "drone build ls owncloud/core --status running > %s/recentBuilds.txt" % dir["server"],
-            "drone build info owncloud/core ${DRONE_BUILD_NUMBER} > %s/thisBuildInfo.txt" % dir["server"],
+            "drone build ls %s --status running > %s/recentBuilds.txt" % (repo_slug, dir["server"]),
+            "drone build info %s ${DRONE_BUILD_NUMBER} > %s/thisBuildInfo.txt" % (repo_slug, dir["server"]),
             "cd %s && ./tests/acceptance/cancelBuilds.sh" % dir["server"],
         ],
         "when": {
